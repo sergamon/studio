@@ -56,7 +56,7 @@ const Step5Review = ({ onBack, onSubmit, addGuest, editGuest }: Step5ReviewProps
             <ReviewItem label={t('field_nat_mode')} value={guest.nationality} />
             <ReviewItem label={t('field_origin')} value={guest.countryOfOrigin} />
             <ReviewItem label={t('field_next')} value={guest.nextDestination} />
-            <ReviewItem label={t('field_phone')} value={guest.phone} />
+            <ReviewItem label={t('field_phone')} value={`+${guest.phoneCountryCode}${guest.phone}`} />
             <ReviewItem label={t('field_city')} value={guest.cityOfResidence} />
             <ReviewItem label={t('field_flight')} value={guest.flightNumber} />
           </CardContent>

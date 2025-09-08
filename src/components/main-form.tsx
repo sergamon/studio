@@ -24,6 +24,7 @@ const defaultGuest: GuestState = {
   nationality: 'COLOMBIA',
   countryOfOrigin: 'COLOMBIA',
   nextDestination: 'COLOMBIA',
+  phoneCountryCode: '57',
   phone: '',
   cityOfResidence: '',
   flightNumber: '',
@@ -59,7 +60,7 @@ export default function MainForm() {
     },
   });
 
-  const { control, trigger } = methods;
+  const { control, trigger, getValues, formState: { errors } } = methods;
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -117,7 +118,14 @@ export default function MainForm() {
 
   const handleFinalSubmit = () => {
     // In a real app, this would send data to a server
-    console.log('Form Submitted:', methods.getValues());
+    const formValues = getValues();
+    const guestsWithFullPhone = formValues.guests.map(guest => ({
+        ...guest,
+        phone: `+${guest.phoneCountryCode}${guest.phone}`
+    }));
+    const finalData = { ...formValues, guests: guestsWithFullPhone };
+
+    console.log('Form Submitted:', finalData);
     setIsSubmitted(true);
   };
   

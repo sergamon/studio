@@ -41,7 +41,7 @@ export const dictionary = {
     errors_required: "Campo obligatorio",
     errors_doc_required: "Debes capturar o subir el documento (anverso y reverso).",
     errors_birth: "Fecha inválida o edad < 14 años.",
-    errors_phone: "Formato telefónico inválido. Usa +código y dígitos.",
+    errors_phone: "Formato telefónico inválido.",
     errors_consents: "Debes aceptar todos los consentimientos.",
     errors_signature: "La firma es obligatoria.",
     errors_email: "Correo electrónico inválido.",
@@ -51,6 +51,9 @@ export const dictionary = {
     file_uploaded: "Archivo cargado",
     "processing...": "Procesando...",
     lang: 'es',
+    select_country_code: 'Indicativo',
+    search_country: 'Buscar país...',
+    no_country_found: 'No se encontró el país.',
   },
   en: {
     title: "Hosty | Check-in and Access Authorization",
@@ -94,7 +97,7 @@ export const dictionary = {
     errors_required: "Required field",
     errors_doc_required: "You must capture or upload the ID (front and back).",
     errors_birth: "Invalid date or age < 14.",
-    errors_phone: "Invalid phone format. Use +country code and digits.",
+    errors_phone: "Invalid phone format.",
     errors_consents: "You must accept all consents.",
     errors_signature: "Signature is required.",
     errors_email: "Invalid email.",
@@ -104,6 +107,9 @@ export const dictionary = {
     file_uploaded: "File uploaded",
     "processing...": "Processing...",
     lang: 'en',
+    select_country_code: 'Code',
+    search_country: 'Search country...',
+    no_country_found: 'No country found.',
   }
 };
 

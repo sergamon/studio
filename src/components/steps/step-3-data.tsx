@@ -8,6 +8,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import CountryCodeSelector from '../country-code-selector';
 
 interface Step3DataProps {
   onNext: () => void;
@@ -110,13 +111,40 @@ const Step3Data = ({ onNext, onBack, guestIndex }: Step3DataProps) => {
             <FormMessage />
           </FormItem>
         )} />
-        <FormField control={control} name={`guests.${guestIndex}.phone`} render={({ field }) => (
-          <FormItem>
+
+        <div className="md:col-span-2">
             <FormLabel>{t('field_phone')}</FormLabel>
-            <FormControl><Input placeholder="+1234567890" {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
+            <div className="flex gap-2">
+                <FormField
+                    control={control}
+                    name={`guests.${guestIndex}.phoneCountryCode`}
+                    render={({ field }) => (
+                        <FormItem className="w-1/3">
+                            <FormControl>
+                                <CountryCodeSelector
+                                    value={field.value}
+                                    onChange={(value) => field.onChange(value)}
+                                />
+                            </FormControl>
+                             <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={control}
+                    name={`guests.${guestIndex}.phone`}
+                    render={({ field }) => (
+                        <FormItem className="flex-1">
+                            <FormControl>
+                                <Input type="tel" placeholder="1234567890" {...field} />
+                            </FormControl>
+                             <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
+        </div>
+
         <FormField control={control} name={`guests.${guestIndex}.cityOfResidence`} render={({ field }) => (
           <FormItem>
             <FormLabel>{t('field_city')}</FormLabel>

@@ -26,7 +26,8 @@ const GuestSchema = z.object({
   nationality: z.string().min(1, 'errors_required').transform(v => v.toUpperCase()),
   countryOfOrigin: z.string().min(1, 'errors_required'),
   nextDestination: z.string().min(1, 'errors_required'),
-  phone: z.string().min(1, 'errors_required').regex(/^\+[1-9]\d{1,14}$/, 'errors_phone'),
+  phone: z.string().min(1, 'errors_required').regex(/^\d{7,15}$/, 'errors_phone'),
+  phoneCountryCode: z.string().min(1, 'errors_required'),
   cityOfResidence: z.string().min(1, 'errors_required'),
   flightNumber: z.string().optional().refine( (val) => !val || /^[A-Za-z]{2}\d{3,4}$/.test(val) ),
   idFrontUrl: z.string().min(1, 'errors_doc_required'),
@@ -42,6 +43,19 @@ export const FormSchema = z.object({
   consentMig: z.literal(true, { errorMap: () => ({ message: 'errors_consents' }) }),
   consentDp: z.literal(true, { errorMap: () => ({ message: 'errors_consents' }) }),
   signature: z.string().min(1, 'errors_signature'),
+}).superRefine((data, ctx) => {
+    data.guests.forEach((guest, index) => {
+        if (guest.phone && guest.phoneCountryCode) {
+            const fullPhone = `+${guest.phoneCountryCode}${guest.phone}`;
+             if (!/^\+[1-9]\d{1,14}$/.test(fullPhone)) {
+                ctx.addIssue({
+                    path: ['guests', index, 'phone'],
+                    message: "errors_phone",
+                    code: z.ZodIssueCode.custom,
+                });
+            }
+        }
+    });
 });
 
 export type FormState = z.infer<typeof FormSchema>;
