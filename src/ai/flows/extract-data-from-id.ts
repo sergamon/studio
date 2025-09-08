@@ -38,14 +38,16 @@ const prompt = ai.definePrompt({
   name: 'extractDataFromIDPrompt',
   input: {schema: ExtractDataFromIDInputSchema},
   output: {schema: ExtractDataFromIDOutputSchema},
-  prompt: `You are an expert OCR data extraction specialist.
+  prompt: `You are an expert OCR data extraction specialist with advanced capabilities in analyzing identity documents.
 
-You will extract the following fields from the ID document:
+You will extract the following fields from the provided ID document image:
 - full_name
 - document_type
 - identification_number
 - birthdate_ddmmyyyy
 - nationality_label
+
+Pay close attention to the 'nationality_label'. If the nationality is not explicitly written, you must deduce it from the context of the document. Analyze visual cues such as flags, logos, symbols, or the issuing country of the document to determine the nationality.
 
 Return the extracted data in JSON format.
 
@@ -65,4 +67,3 @@ const extractDataFromIDFlow = ai.defineFlow(
     return output!;
   }
 );
-
