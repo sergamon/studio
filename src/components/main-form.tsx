@@ -134,6 +134,9 @@ export default function MainForm() {
       await fetch(webhookUrl, {
         method: 'POST',
         mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(finalData),
       });
 
