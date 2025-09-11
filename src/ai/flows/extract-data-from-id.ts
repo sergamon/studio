@@ -42,12 +42,12 @@ const prompt = ai.definePrompt({
 
 You will extract the following fields from the provided ID document image:
 - full_name
-- document_type
-- identification_number
+- document_type: Identify the type of document (e.g., "Cédula de Ciudadanía", "Pasaporte", "Cédula de Extranjería").
+- identification_number: Find the main identification number on the document. It might be labeled as "No.", "DOCUMENTO", "NÚMERO", etc.
 - birthdate_ddmmyyyy
-- nationality_label
+- nationality_label: The nationality of the person.
 
-Pay close attention to the 'nationality_label'. If the nationality is not explicitly written, you must deduce it from the context of the document. Analyze visual cues such as flags, logos, symbols, or the issuing country of the document to determine the nationality.
+Pay close attention to the 'nationality_label'. If the nationality is not explicitly written, you must deduce it from the context of the document. Analyze visual cues such as flags, logos, symbols, or the issuing country of the document to determine the nationality. For example, if the document is a "Cédula de Ciudadanía" from "República de Colombia", the nationality is "COLOMBIA".
 
 Return the extracted data in JSON format.
 
