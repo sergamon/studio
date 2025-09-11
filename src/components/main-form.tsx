@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormSchema, FormState, GuestState } from '@/lib/schema';
 import { useLanguage } from '@/hooks/use-language';
 import type { TranslationKey } from '@/lib/i18n';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 import Stepper from './stepper';
 import Step1Property from './steps/step-1-property';
@@ -42,9 +44,11 @@ const STEPS: TranslationKey[] = [
 
 export default function MainForm() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [currentGuestIndex, setCurrentGuestIndex] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const methods = useForm<FormState>({
     resolver: zodResolver(FormSchema),
@@ -116,8 +120,9 @@ export default function MainForm() {
     setCurrentStep(4); // Back to review step
   }
 
-  const handleFinalSubmit = () => {
-    // In a real app, this would send data to a server
+  const handleFinalSubmit = async () => {
+    setIsSubmitting(true);
+    const webhookUrl = 'https://primary-production-48a2.up.railway.app/webhook-test/0c891868-1ea3-466f-87b4-eae59023078f';
     const formValues = getValues();
     const guestsWithFullPhone = formValues.guests.map(guest => ({
         ...guest,
@@ -125,8 +130,31 @@ export default function MainForm() {
     }));
     const finalData = { ...formValues, guests: guestsWithFullPhone };
 
-    console.log('Form Submitted:', finalData);
-    setIsSubmitted(true);
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(finalData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      console.log('Form Submitted:', finalData);
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Error submitting form to webhook:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not submit registration. Please try again.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   const resetForm = () => {
@@ -138,6 +166,15 @@ export default function MainForm() {
 
   if (isSubmitted) {
     return <Step6Confirmation onReset={resetForm} />;
+  }
+
+  if (isSubmitting) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="mt-4 text-lg text-muted-foreground">Sending registration...</p>
+        </div>
+      );
   }
 
   const renderStep = () => {

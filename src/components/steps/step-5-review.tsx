@@ -26,7 +26,7 @@ const ReviewItem = ({ label, value }: { label: string; value?: string | number |
 
 
 const Step5Review = ({ onBack, onSubmit, addGuest, editGuest }: Step5ReviewProps) => {
-  const { watch } = useFormContext<FormState>();
+  const { watch, formState: { isSubmitting } } = useFormContext<FormState>();
   const { t } = useLanguage();
   const formData = watch();
 
@@ -88,8 +88,8 @@ const Step5Review = ({ onBack, onSubmit, addGuest, editGuest }: Step5ReviewProps
 
 
       <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={onBack}>{t('correct')}</Button>
-        <Button onClick={onSubmit}>{t('send')}</Button>
+        <Button variant="outline" onClick={onBack} disabled={isSubmitting}>{t('correct')}</Button>
+        <Button onClick={onSubmit} disabled={isSubmitting}>{t('send')}</Button>
       </div>
     </div>
   );
