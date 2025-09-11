@@ -68,7 +68,7 @@ const CountryCodeSelector = ({ value, onChange }: CountryCodeSelectorProps) => {
             <CommandGroup>
               {countries.map((country) => (
                 <CommandItem
-                  key={country.code}
+                  key={`${country.label}-${country.code}`}
                   value={`${country.label} +${country.code}`}
                   onSelect={() => {
                     onChange(country.code.replace(/-/g, ""))
