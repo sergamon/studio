@@ -124,19 +124,24 @@ export default function MainForm() {
     setIsSubmitting(true);
     const webhookUrl = 'https://primary-production-48a2.up.railway.app/webhook-test/0c891868-1ea3-466f-87b4-eae59023078f';
     const formValues = getValues();
+    
     const guestsWithFullPhone = formValues.guests.map(guest => ({
         ...guest,
-        phone: `+${guest.phoneCountryCode}${guest.phone}`
+        phone: `+${guest.phoneCountryCode}${guest.phone.replace(`+${guest.phoneCountryCode}`, '')}`
     }));
-    const finalData = { ...formValues, guests: guestsWithFullPhone };
+
+    let finalData: any = { ...formValues, guests: guestsWithFullPhone };
+
+    if (formValues.guests.length === 1) {
+        const { guests, ...restOfForm } = finalData;
+        finalData = { ...restOfForm, ...guests[0] };
+    }
+
 
     try {
       await fetch(webhookUrl, {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(finalData),
       });
 

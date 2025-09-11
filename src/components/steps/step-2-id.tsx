@@ -25,7 +25,7 @@ const fileToDataUri = (file: File): Promise<string> => {
     });
 };
 
-const FileUploader = ({ onFileUploaded, fieldName, label }: { onFileUploaded: (file: File, fieldName: string) => void; fieldName: string; label: string }) => {
+const FileUploader = ({ onFileUploaded, fieldName, label }: { onFileUploaded: (file: File, fieldName: string, dataUri: string) => void; fieldName: string; label: string }) => {
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
   const { getValues } = useFormContext();
@@ -34,7 +34,8 @@ const FileUploader = ({ onFileUploaded, fieldName, label }: { onFileUploaded: (f
     const file = acceptedFiles[0];
     if (file) {
       setLoading(true);
-      await onFileUploaded(file, fieldName);
+      const dataUri = await fileToDataUri(file);
+      await onFileUploaded(file, fieldName, dataUri);
       setLoading(false);
     }
   }, [onFileUploaded, fieldName]);
@@ -82,14 +83,13 @@ const Step2Id = ({ onNext, onBack, guestIndex }: Step2IdProps) => {
   const { toast } = useToast();
   const [isExtracting, setIsExtracting] = useState(false);
 
-  const handleFileUpload = async (file: File, fieldName: string) => {
-    setValue(fieldName, file.name, { shouldValidate: true });
+  const handleFileUpload = async (file: File, fieldName: string, dataUri: string) => {
+    setValue(fieldName, dataUri, { shouldValidate: true });
     
     // Only run OCR on the front image
     if (fieldName === `guests.${guestIndex}.idFrontUrl`) {
       setIsExtracting(true);
       try {
-        const dataUri = await fileToDataUri(file);
         const result = await extractDataFromID({ photoDataUri: dataUri });
 
         if (result.full_name) setValue(`guests.${guestIndex}.fullName`, result.full_name, { shouldDirty: true });
@@ -131,7 +131,18 @@ const Step2Id = ({ onNext, onBack, guestIndex }: Step2IdProps) => {
             </FormItem>
           )}
         />
-        <FileUploader onFileUploaded={handleFileUpload} fieldName={`guests.${guestIndex}.idBackUrl`} label={t('upload_back')} />
+        <FormField
+          control={useFormContext().control}
+          name={`guests.${guestIndex}.idBackUrl`}
+          render={() => (
+            <FormItem>
+              <FormControl>
+                <FileUploader onFileUploaded={handleFileUpload} fieldName={`guests.${guestIndex}.idBackUrl`} label={t('upload_back')} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
 
       {(isExtracting) && (
