@@ -131,19 +131,16 @@ export default function MainForm() {
     const finalData = { ...formValues, guests: guestsWithFullPhone };
 
     try {
-      const response = await fetch(webhookUrl, {
+      await fetch(webhookUrl, {
         method: 'POST',
+        mode: 'no-cors',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(finalData),
       });
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      console.log('Form Submitted:', finalData);
+      console.log('Form Submitted (no-cors):', finalData);
       setIsSubmitted(true);
     } catch (error) {
       console.error('Error submitting form to webhook:', error);
@@ -152,8 +149,7 @@ export default function MainForm() {
         title: 'Error',
         description: 'Could not submit registration. Please try again.',
       });
-    } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Only set submitting to false on error
     }
   };
   
