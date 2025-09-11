@@ -94,7 +94,7 @@ const Step2Id = ({ onNext, onBack, guestIndex }: Step2IdProps) => {
 
         if (result.full_name) setValue(`guests.${guestIndex}.fullName`, result.full_name, { shouldDirty: true });
         if (result.document_type) setValue(`guests.${guestIndex}.documentType`, result.document_type, { shouldDirty: true });
-        if (result.identification_number) setValue(`guests.${guestIndex}.identification_number`, result.identification_number, { shouldDirty: true });
+        if (result.identification_number) setValue(`guests.${guestIndex}.idNumber`, result.identification_number, { shouldDirty: true });
         if (result.birthdate_ddmmyyyy) setValue(`guests.${guestIndex}.birthDate`, result.birthdate_ddmmyyyy, { shouldDirty: true });
         if (result.nationality_label) {
             setValue(`guests.${guestIndex}.nationalityMode`, 'Otra', { shouldDirty: true });
