@@ -154,7 +154,8 @@ export default function MainForm() {
         title: 'Error',
         description: 'Could not submit registration. Please try again.',
       });
-      setIsSubmitting(false); // Only set submitting to false on error
+    } finally {
+        setIsSubmitting(false);
     }
   };
   
@@ -163,6 +164,7 @@ export default function MainForm() {
     setCurrentStep(0);
     setCurrentGuestIndex(0);
     setIsSubmitted(false);
+    setIsSubmitting(false);
   }
 
   if (isSubmitted) {
@@ -171,7 +173,7 @@ export default function MainForm() {
 
   if (isSubmitting) {
       return (
-        <div className="flex flex-col items-center justify-center h-64">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center justify-center h-64">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="mt-4 text-lg text-muted-foreground">Sending registration...</p>
         </div>

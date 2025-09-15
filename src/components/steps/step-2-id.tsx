@@ -79,18 +79,31 @@ const FileUploader = ({ onFileUploaded, fieldName, label }: { onFileUploaded: (f
 
 const Step2Id = ({ onNext, onBack, guestIndex }: Step2IdProps) => {
   const { t } = useLanguage();
-  const { setValue, getValues, formState: { errors } } = useFormContext();
+  const { setValue, getValues, trigger } = useFormContext();
   const { toast } = useToast();
   const [isExtracting, setIsExtracting] = useState(false);
 
   const handleFileUpload = async (file: File, fieldName: string, dataUri: string) => {
     setValue(fieldName, dataUri, { shouldValidate: true });
-    
-    // Only run OCR on the front image
-    if (fieldName === `guests.${guestIndex}.idFrontUrl`) {
+    // Trigger validation to clear potential errors
+    await trigger(fieldName);
+  };
+  
+  const runOcr = async () => {
+      const frontImageUri = getValues(`guests.${guestIndex}.idFrontUrl`);
+      const backImageUri = getValues(`guests.${guestIndex}.idBackUrl`);
+
+      if (!frontImageUri) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Front of ID is required.' });
+          return;
+      }
+      
       setIsExtracting(true);
       try {
-        const result = await extractDataFromID({ photoDataUri: dataUri });
+        const result = await extractDataFromID({
+          frontPhotoDataUri: frontImageUri,
+          backPhotoDataUri: backImageUri,
+        });
 
         if (result.full_name) setValue(`guests.${guestIndex}.fullName`, result.full_name, { shouldDirty: true });
         if (result.document_type) setValue(`guests.${guestIndex}.documentType`, result.document_type, { shouldDirty: true });
@@ -101,6 +114,7 @@ const Step2Id = ({ onNext, onBack, guestIndex }: Step2IdProps) => {
             setValue(`guests.${guestIndex}.nationality`, result.nationality_label.toUpperCase(), { shouldDirty: true });
         }
         toast({ title: "Success", description: "Data extracted from ID." });
+        onNext(); // Move to next step on success
       } catch (error) {
         console.error('OCR Error:', error);
         toast({
@@ -111,8 +125,8 @@ const Step2Id = ({ onNext, onBack, guestIndex }: Step2IdProps) => {
       } finally {
         setIsExtracting(false);
       }
-    }
-  };
+  }
+
 
   return (
     <div className="space-y-6">
@@ -145,18 +159,11 @@ const Step2Id = ({ onNext, onBack, guestIndex }: Step2IdProps) => {
         />
       </div>
 
-      {(isExtracting) && (
-        <div className="flex items-center justify-center p-4 bg-muted/50 rounded-md">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          <span>{t('extracting')}</span>
-        </div>
-      )}
-
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>{t('correct')}</Button>
-        <Button onClick={onNext} disabled={isExtracting || !getValues(`guests.${guestIndex}.idFrontUrl`)}>
+        <Button onClick={runOcr} disabled={isExtracting || !getValues(`guests.${guestIndex}.idFrontUrl`)}>
           {isExtracting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {t('send')}
+          {isExtracting ? t('extracting') : t('send')}
         </Button>
       </div>
     </div>
