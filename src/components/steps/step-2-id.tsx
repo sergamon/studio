@@ -115,12 +115,18 @@ const Step2Id = ({ onNext, onBack, guestIndex }: Step2IdProps) => {
         }
         toast({ title: "Success", description: "Data extracted from ID." });
         onNext(); // Move to next step on success
-      } catch (error) {
+      } catch (error: any) {
         console.error('OCR Error:', error);
+        
+        let description = 'Could not extract data from the document.';
+        if (error.message?.includes('503')) {
+          description = 'The AI service is temporarily overloaded. Please try again in a moment.';
+        }
+        
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Could not extract data from the document.',
+          description,
         });
       } finally {
         setIsExtracting(false);
