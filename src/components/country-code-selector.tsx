@@ -26,24 +26,22 @@ interface CountryCodeSelectorProps {
 }
 
 const CountryCodeSelector = ({ value, onChange }: CountryCodeSelectorProps) => {
-  const [open, setOpen] = React.useState(false)
-  const { t } = useLanguage()
+  const [open, setOpen] = React.useState(false);
+  const { t } = useLanguage();
 
   const selectedCountry = countries.find(
     (country) => country.code.replace(/-/g, "") === value
-  )
+  );
 
   const getCountryFlag = (countryCode: string) => {
-    // Basic mapping for some countries. In a real app, use a library or more robust mapping.
     const codeMap: { [key: string]: string } = {
         "57": "CO", "1": "US", "54": "AR", "55": "BR", "56": "CL", "593": "EC", "51": "PE", "598": "UY", "58": "VE", "52": "MX", "34": "ES",
     };
 
-    const isoCode = codeMap[countryCode.replace(/-/g, "")] || "UN"; // Default to UN flag
+    const isoCode = codeMap[countryCode.replace(/-/g, "")] || "UN";
     if (isoCode === 'UN') return '🏳️';
     return String.fromCodePoint(...[...isoCode.toUpperCase()].map(char => 0x1F1E6 + char.charCodeAt(0) - 65));
   };
-
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -91,7 +89,7 @@ const CountryCodeSelector = ({ value, onChange }: CountryCodeSelectorProps) => {
         </Command>
       </PopoverContent>
     </Popover>
-  )
-}
+  );
+};
 
 export default CountryCodeSelector;
