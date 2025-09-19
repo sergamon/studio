@@ -125,18 +125,21 @@ export default function MainForm() {
     const webhookUrl = 'https://primary-production-48a2.up.railway.app/webhook-test/1dfa428c-e3ab-464c-a634-9c30a68088a2';
     const formValues = getValues();
     
-    const guestsWithFullPhone = formValues.guests.map(guest => ({
+    const clients = formValues.guests.map(guest => ({
         ...guest,
-        phone: `+${guest.phoneCountryCode}${guest.phone.replace(`+${guest.phoneCountryCode}`, '')}`
+        phone: `+${guest.phoneCountryCode}${guest.phone.replace(`+${guest.phoneCountryCode}`, '')}`,
+        email: formValues.email,
+        consentEntry: formValues.consentEntry,
+        consentTra: formValues.consentTra,
+        consentMig: formValues.consentMig,
+        consentDp: formValues.consentDp,
+        signature: formValues.signature,
     }));
 
-    let finalData: any = { ...formValues, guests: guestsWithFullPhone };
-
-    if (formValues.guests.length === 1) {
-        const { guests, ...restOfForm } = finalData;
-        finalData = { ...restOfForm, ...guests[0] };
-    }
-
+    const finalData = {
+      property: formValues.property,
+      clients: clients
+    };
 
     try {
       await fetch(webhookUrl, {
