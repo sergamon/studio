@@ -142,13 +142,19 @@ export default function MainForm() {
     };
 
     try {
-      await fetch(webhookUrl, {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
-        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(finalData),
       });
 
-      console.log('Form Submitted (no-cors):', finalData);
+      if (!response.ok) {
+        throw new Error(`Webhook response was not ok: ${response.statusText}`);
+      }
+
+      console.log('Form Submitted:', finalData);
       setIsSubmitted(true);
     } catch (error) {
       console.error('Error submitting form to webhook:', error);
