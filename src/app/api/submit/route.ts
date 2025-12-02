@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const requestBody = await request.json();
-    const webhookUrl = 'https://primary-production-48a2.up.railway.app/webhook/0c891868-1ea3-466f-87b4-eae59023078f';
+    const webhookUrl = 'https://primary-production-48a2.up.railway.app/webhook-test/0c891868-1ea3-466f-87b4-eae59023078f';
 
     const webhookResponse = await fetch(webhookUrl, {
       method: 'POST',
