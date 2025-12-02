@@ -122,7 +122,6 @@ export default function MainForm() {
 
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
-    const webhookUrl = 'https://primary-production-48a2.up.railway.app/webhook-test/1dfa428c-e3ab-464c-a634-9c30a68088a2';
     const formValues = getValues();
     
     const clients = formValues.guests.map(guest => ({
@@ -142,7 +141,7 @@ export default function MainForm() {
     };
 
     try {
-      const response = await fetch(webhookUrl, {
+      const response = await fetch('/api/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,17 +150,18 @@ export default function MainForm() {
       });
 
       if (!response.ok) {
-        throw new Error(`Webhook response was not ok: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred.' }));
+        throw new Error(`Submission failed: ${errorData.message}`);
       }
 
       console.log('Form Submitted:', finalData);
       setIsSubmitted(true);
-    } catch (error) {
-      console.error('Error submitting form to webhook:', error);
+    } catch (error: any) {
+      console.error('Error submitting form:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Could not submit registration. Please try again.',
+        description: error.message || 'Could not submit registration. Please try again.',
       });
     } finally {
         setIsSubmitting(false);
