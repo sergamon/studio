@@ -15,15 +15,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [lang, setLang] = useState<Language>('es');
 
   useEffect(() => {
-    const savedLang = localStorage.getItem('lang') as Language;
-    if (savedLang && (savedLang === 'es' || savedLang === 'en')) {
-      setLang(savedLang);
+    if (typeof window !== 'undefined') {
+      const savedLang = localStorage.getItem('lang') as Language;
+      if (savedLang && (savedLang === 'es' || savedLang === 'en')) {
+        setLang(savedLang);
+      }
     }
   }, []);
 
   const handleSetLang = (newLang: Language) => {
     setLang(newLang);
-    localStorage.setItem('lang', newLang);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lang', newLang);
+    }
   };
 
   const t = useCallback((key: TranslationKey): string => {

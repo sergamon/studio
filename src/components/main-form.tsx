@@ -72,23 +72,23 @@ export default function MainForm() {
   });
 
   const nextStep = async () => {
-    let fieldsToValidate: (keyof FormState)[] | `guests.${number}.${keyof GuestState}`[] = [];
-    
+    let fieldsToValidate: string[] = [];
+
     switch (currentStep) {
-        case 0: // Property & Email
-            fieldsToValidate = ['property', 'email'];
-            break;
-        case 1: // ID Scan
-            fieldsToValidate = [`guests.${currentGuestIndex}.idFrontUrl`];
-            break;
-        case 2: // Guest Data
-            fieldsToValidate = Object.keys(defaultGuest).map(key => `guests.${currentGuestIndex}.${key as keyof GuestState}`);
-            break;
-        case 3: // Consent
-            fieldsToValidate = ['consentEntry', 'consentTra', 'consentMig', 'consentDp', 'signature'];
-            break;
+      case 0: // Property & Email
+        fieldsToValidate = ['property', 'email'];
+        break;
+      case 1: // ID Scan
+        fieldsToValidate = [`guests.${currentGuestIndex}.idFrontUrl`];
+        break;
+      case 2: // Guest Data
+        fieldsToValidate = Object.keys(defaultGuest).map(key => `guests.${currentGuestIndex}.${key as keyof GuestState}`);
+        break;
+      case 3: // Consent
+        fieldsToValidate = ['consentEntry', 'consentTra', 'consentMig', 'consentDp', 'signature'];
+        break;
     }
-    
+
     const isValid = fieldsToValidate.length > 0 ? await trigger(fieldsToValidate as any) : true;
 
     if (isValid) {
@@ -123,16 +123,16 @@ export default function MainForm() {
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
     const formValues = getValues();
-    
+
     const clients = formValues.guests.map(guest => ({
-        ...guest,
-        phone: `+${guest.phoneCountryCode}${guest.phone.replace(`+${guest.phoneCountryCode}`, '')}`,
-        email: formValues.email,
-        consentEntry: formValues.consentEntry,
-        consentTra: formValues.consentTra,
-        consentMig: formValues.consentMig,
-        consentDp: formValues.consentDp,
-        signature: formValues.signature,
+      ...guest,
+      phone: `+${guest.phoneCountryCode}${guest.phone.replace(`+${guest.phoneCountryCode}`, '')}`,
+      email: formValues.email,
+      consentEntry: formValues.consentEntry,
+      consentTra: formValues.consentTra,
+      consentMig: formValues.consentMig,
+      consentDp: formValues.consentDp,
+      signature: formValues.signature,
     }));
 
     const finalData = {
@@ -164,10 +164,10 @@ export default function MainForm() {
         description: error.message || 'Could not submit registration. Please try again.',
       });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
-  
+
   const resetForm = () => {
     methods.reset();
     setCurrentStep(0);
@@ -181,12 +181,12 @@ export default function MainForm() {
   }
 
   if (isSubmitting) {
-      return (
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center justify-center h-64">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="mt-4 text-lg text-muted-foreground">Sending registration...</p>
-        </div>
-      );
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center justify-center h-64">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-lg text-muted-foreground">Sending registration...</p>
+      </div>
+    );
   }
 
   const renderStep = () => {
