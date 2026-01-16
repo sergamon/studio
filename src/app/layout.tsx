@@ -1,8 +1,17 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Toaster } from '@/components/ui/toaster';
-import { LanguageProvider } from '@/contexts/language-context';
 import { cn } from '@/lib/utils';
+import { ClientProviders } from '@/components/client-providers';
+
+// FIX: Remove broken localStorage polyfill/mock from environment
+if (typeof global !== 'undefined' && (global as any).localStorage) {
+  try {
+    delete (global as any).localStorage;
+    console.log('SERVER FIX: Deleted broken global.localStorage');
+  } catch (e) {
+    console.error('SERVER FIX: Failed to delete global.localStorage', e);
+  }
+}
 
 export const metadata: Metadata = {
   title: 'Hosty | Registro y Autorización de Ingreso',
@@ -25,10 +34,9 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased', 'min-h-screen bg-background font-sans')}>
-        <LanguageProvider>
+        <ClientProviders>
           {children}
-          <Toaster />
-        </LanguageProvider>
+        </ClientProviders>
       </body>
     </html>
   );

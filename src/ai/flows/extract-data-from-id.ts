@@ -7,8 +7,8 @@
  * - ExtractDataFromIDOutput - The return type for the extractDataFromID function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const ExtractDataFromIDInputSchema = z.object({
   frontPhotoDataUri: z
@@ -42,8 +42,8 @@ export async function extractDataFromID(input: ExtractDataFromIDInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'extractDataFromIDPrompt',
-  input: {schema: ExtractDataFromIDInputSchema},
-  output: {schema: ExtractDataFromIDOutputSchema},
+  input: { schema: ExtractDataFromIDInputSchema },
+  output: { schema: ExtractDataFromIDOutputSchema },
   prompt: `You are an expert OCR data extraction specialist with advanced capabilities in analyzing identity documents from both front and back sides.
 
 You will extract the following fields from the provided ID document images:
@@ -74,8 +74,8 @@ const extractDataFromIDFlow = ai.defineFlow(
     inputSchema: ExtractDataFromIDInputSchema,
     outputSchema: ExtractDataFromIDOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input: any) => {
+    const { output } = await prompt(input);
     return output!;
   }
 );
