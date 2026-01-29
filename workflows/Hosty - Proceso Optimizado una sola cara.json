@@ -1,0 +1,289 @@
+{
+  "name": "Hosty - Proceso Optimizado una sola cara",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "48622859-1dfe-4299-b129-8ea8c74bc2ee",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -840,
+        120
+      ],
+      "id": "68d61d3a-3690-4af6-b18e-c01168c23b73",
+      "name": "Webhook (Recibe Datos App)",
+      "webhookId": "48622859-1dfe-4299-b129-8ea8c74bc2ee"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body || {};\nconst query = $json.query || {};\nconst binaryKey = $binary.image ? 'image' : 'data';\n\nreturn [{\n  json: {\n    ...$json,\n    property: body.property || query.property || '',\n    source: body.source || 'vercel',\n    receivedAt: $now,\n    binaryKey\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        120
+      ],
+      "id": "9b0a2ab3-3f34-4b40-8c02-f2f7a6a59c41",
+      "name": "Normalizar Entrada (Code)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$binary[$json.binaryKey] }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        120
+      ],
+      "id": "9d5e7f07-73db-4b3a-81dc-1dbd8f4b9b2b",
+      "name": "Validar Imagen (IF)"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const binaryKey = $json.binaryKey || ($binary.image ? 'image' : 'data');\nconst bin = $binary[binaryKey];\n\nconst mimeType = bin?.mimeType || 'image/jpeg';\nconst base64Data = bin?.data || '';\nconst approxBytes = base64Data ? Math.round((base64Data.length * 3) / 4) : 0;\n\nconst promptText = 'Eres un sistema de extraccion de datos de documentos de identidad (una sola cara).\\n' +\n  'Extrae los siguientes campos si aparecen:\\n' +\n  '- full_name\\n' +\n  '- document_number\\n' +\n  '- document_type (ej: CC, CE, Passport, ID)\\n' +\n  '- country\\n' +\n  '- birth_date\\n' +\n  '- issue_date\\n\\n' +\n  'Devuelve SOLO JSON, sin texto adicional.\\n' +\n  'Incluye confidence por campo (0 a 1) y warnings (array de strings: blur, glare, cropped, unreadable).\\n' +\n  'Si un campo no se ve, devuelve null y agrega un warning correspondiente.\\n' +\n  'Formato esperado:\\n' +\n  '{\\n' +\n  '  \\\"full_name\\\": string|null,\\n' +\n  '  \\\"document_number\\\": string|null,\\n' +\n  '  \\\"document_type\\\": string|null,\\n' +\n  '  \\\"country\\\": string|null,\\n' +\n  '  \\\"birth_date\\\": string|null,\\n' +\n  '  \\\"issue_date\\\": string|null,\\n' +\n  '  \\\"confidence\\\": {\\n' +\n  '    \\\"full_name\\\": number,\\n' +\n  '    \\\"document_number\\\": number,\\n' +\n  '    \\\"document_type\\\": number,\\n' +\n  '    \\\"country\\\": number,\\n' +\n  '    \\\"birth_date\\\": number,\\n' +\n  '    \\\"issue_date\\\": number\\n' +\n  '  },\\n' +\n  '  \\\"warnings\\\": [string]\\n' +\n  '}';\n\nreturn [{\n  json: {\n    ...$json,\n    mime_type: mimeType,\n    base64_data: base64Data,\n    prompt_text: promptText,\n    approxBytes\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        80
+      ],
+      "id": "b07b8d0f-1fbe-41c1-bc4f-2d2c4fca2a2c",
+      "name": "Preparar Payload Gemini"
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+        "method": "POST",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-goog-api-key",
+              "value": "={{ $env.GEMINI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "jsonParameters": true,
+        "bodyParametersJson": "={\\n  \\\"contents\\\": [\\n    {\\n      \\\"parts\\\": [\\n        {\\n          \\\"inline_data\\\": {\\n            \\\"mime_type\\\": \\\"{{$json.mime_type}}\\\",\\n            \\\"data\\\": \\\"{{$json.base64_data}}\\\"\\n          }\\n        },\\n        {\\n          \\\"text\\\": \\\"{{$json.prompt_text}}\\\"\\n        }\\n      ]\\n    }\\n  ],\\n  \\\"generationConfig\\\": {\\n    \\\"temperature\\\": 0.1,\\n    \\\"response_mime_type\\\": \\\"application/json\\\"\\n  }\\n}",
+        "options": {
+          "ignoreResponseCode": true,
+          "fullResponse": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        120,
+        80
+      ],
+      "id": "9b65f340-530b-4a83-92f8-86a7a3d8863c",
+      "name": "HTTP Request Gemini"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const context = $items('Normalizar Entrada (Code)')[0]?.json || {};\nconst prep = $items('Preparar Payload Gemini')[0]?.json || {};\n\nconst raw = $json || {};\nconst statusCode = raw.statusCode || raw.status || 200;\nconst body = raw.body || raw;\n\nconst responseError = body?.error || (statusCode >= 400);\nif (responseError) {\n  const detail = typeof body === 'string' ? body : JSON.stringify(body);\n  return [{\n    json: {\n      statusCode: 500,\n      body: {\n        ok: false,\n        error: 'GEMINI_CALL_FAILED',\n        detail: detail.slice(0, 500)\n      }\n    }\n  }];\n}\n\nconst candidates = body?.candidates || body?.data?.candidates || [];\nconst parts = candidates[0]?.content?.parts || [];\nconst text = parts.map((part) => part.text || '').join('') || candidates[0]?.content?.parts?.[0]?.text || '';\n\nconst extractJson = (input) => {\n  if (!input || typeof input !== 'string') return null;\n  let cleaned = input.trim();\n  if (cleaned.startsWith('```')) {\n    cleaned = cleaned.replace(/^```(json)?/i, '').replace(/```$/i, '').trim();\n  }\n  const match = cleaned.match(/\\{[\\s\\S]*\\}/);\n  if (match) cleaned = match[0];\n  try {\n    return JSON.parse(cleaned);\n  } catch (e) {\n    return null;\n  }\n};\n\nconst parsed = typeof body === 'object' && body?.extraction ? body : extractJson(text);\n\nif (!parsed) {\n  return [{\n    json: {\n      statusCode: 500,\n      body: {\n        ok: false,\n        error: 'GEMINI_PARSE_FAILED',\n        detail: (text || 'No text response').slice(0, 500)\n      }\n    }\n  }];\n}\n\nconst normalizeDate = (value) => {\n  if (!value || typeof value !== 'string') return null;\n  const trimmed = value.trim();\n  const match = trimmed.match(/^(\\d{2})[\\/\\-](\\d{2})[\\/\\-](\\d{4})$/);\n  if (match) {\n    return `${match[3]}-${match[2]}-${match[1]}`;\n  }\n  const isoMatch = trimmed.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);\n  if (isoMatch) return trimmed;\n  return trimmed;\n};\n\nconst warnings = Array.isArray(parsed.warnings) ? parsed.warnings : [];\nconst confidence = parsed.confidence && typeof parsed.confidence === 'object' ? parsed.confidence : {};\n\nconst extraction = {\n  full_name: parsed.full_name?.toString().trim() || null,\n  document_number: parsed.document_number?.toString().trim() || null,\n  document_type: parsed.document_type?.toString().trim() || null,\n  country: parsed.country?.toString().trim() || null,\n  birth_date: normalizeDate(parsed.birth_date),\n  issue_date: normalizeDate(parsed.issue_date),\n  confidence\n};\n\nreturn [{\n  json: {\n    statusCode: 200,\n    body: {\n      ok: true,\n      extraction,\n      warnings,\n      meta: {\n        model: body?.model || 'gemini-3-flash-preview',\n        receivedAt: context.receivedAt || null,\n        property: context.property || ''\n      }\n    },\n    log: {\n      property: context.property || '',\n      receivedAt: context.receivedAt || null,\n      mimeType: prep.mime_type || null,\n      approxBytes: prep.approxBytes || null,\n      warnings\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        80
+      ],
+      "id": "b3e3ee38-8b8f-4d9f-94b7-2b9d2b5d5a78",
+      "name": "Parsear y Estandarizar"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const log = $json.log || {};\nreturn [{\n  json: {\n    ...$json,\n    log_property: log.property || '',\n    log_receivedAt: log.receivedAt || '',\n    log_mimeType: log.mimeType || '',\n    log_approxBytes: typeof log.approxBytes === 'number' ? log.approxBytes : 0\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        80
+      ],
+      "id": "5a3a7b1c-0f2e-4f71-9a48-9d4081c6ed3f",
+      "name": "Log Observabilidad (Set)"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return [{\\n  json: {\\n    statusCode: 400,\\n    body: {\\n      ok: false,\\n      error: 'NO_IMAGE_RECEIVED'\\n    }\\n  }\\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        240
+      ],
+      "id": "e6b6e46b-22d2-43b6-b2ad-6c9b7a9f4e8d",
+      "name": "Respuesta Sin Imagen"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.body }}",
+        "responseCode": "={{ $json.statusCode || 200 }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "https://<tu-proyecto>.vercel.app"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        840,
+        120
+      ],
+      "id": "977410d1-3cfd-4ce2-9655-b4f85656bbbc",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook (Recibe Datos App)": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Entrada (Code)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Entrada (Code)": {
+      "main": [
+        [
+          {
+            "node": "Validar Imagen (IF)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Imagen (IF)": {
+      "main": [
+        [
+          {
+            "node": "Preparar Payload Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta Sin Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Payload Gemini": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Gemini": {
+      "main": [
+        [
+          {
+            "node": "Parsear y Estandarizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear y Estandarizar": {
+      "main": [
+        [
+          {
+            "node": "Log Observabilidad (Set)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Observabilidad (Set)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respuesta Sin Imagen": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "81446945-f161-402b-9fb5-4e15672a2be8",
+  "meta": {
+    "instanceId": "b13d7b9513abd41bc37c09903165a24193e0fee7979e875daa749cddead84d0e"
+  },
+  "id": "uqaaE9Ib3XgVxIx1",
+  "tags": []
+}
