@@ -42,7 +42,7 @@ export const FormSchema = z.object({
   consentTra: z.boolean().refine(val => val === true, { message: 'errors_consents' }),
   consentMig: z.boolean().refine(val => val === true, { message: 'errors_consents' }),
   consentDp: z.boolean().refine(val => val === true, { message: 'errors_consents' }),
-  signature: z.string().min(1, 'errors_signature'),
+  swornStatement: z.boolean().refine(val => val === true, { message: 'errors_consents' }),
 }).superRefine((data, ctx) => {
   data.guests.forEach((guest, index) => {
     if (guest.phone && guest.phoneCountryCode) {

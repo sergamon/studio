@@ -5,7 +5,6 @@ import { useLanguage } from '@/hooks/use-language';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { SignaturePad } from '../signature-pad';
 
 interface Step4ConsentProps {
   onNext: () => void;
@@ -46,21 +45,25 @@ const Step4Consent = ({ onNext, onBack }: Step4ConsentProps) => {
             )}
           />
         ))}
+
+        <FormField
+          control={control}
+          name="swornStatement"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/30">
+              <FormControl>
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel className="text-sm font-medium leading-relaxed italic">
+                  {t('sworn_statement')}
+                </FormLabel>
+                <FormMessage />
+              </div>
+            </FormItem>
+          )}
+        />
       </div>
-      
-      <FormField
-        control={control}
-        name="signature"
-        render={() => (
-          <FormItem>
-            <FormLabel>{t('signature')}</FormLabel>
-            <FormControl>
-              <SignaturePad fieldName="signature" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
 
       <div className="text-center text-xs text-muted-foreground pt-4">
         {lang === 'es' ? (

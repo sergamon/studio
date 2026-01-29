@@ -21,28 +21,36 @@ interface Step2IdProps {
 const compressImage = (dataUri: string, maxWidth = 1024, quality = 0.7): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     img.src = dataUri;
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
+      try {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
 
-      if (width > maxWidth) {
-        height = Math.round((height * maxWidth) / width);
-        width = maxWidth;
-      }
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
 
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('Canvas context not available'));
-        return;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas context not available'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch (err) {
+        reject(err);
       }
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
     };
-    img.onerror = (err) => reject(err);
+    img.onerror = (err) => {
+      console.error("Image load error in compressImage", err);
+      reject(new Error("Failed to load image for compression"));
+    };
   });
 };
 
@@ -57,12 +65,20 @@ export default function Step2Id({ onNext, onBack, guestIndex }: Step2IdProps) {
   const handleCapture = async (imageSrc: string, fieldName: string) => {
     // Compress immediately upon capture to save memory and avoid huge payloads
     try {
+      console.log(`Attempting compression for ${fieldName}, length: ${imageSrc.length}`);
       const compressed = await compressImage(imageSrc);
+      console.log(`Compression successful for ${fieldName}, new length: ${compressed.length}`);
       setValue(fieldName, compressed, { shouldValidate: true, shouldDirty: true });
       toast({ description: t('file_uploaded') || "Image captured and optimized" });
     } catch (e) {
       console.error("Compression ended with error:", e);
-      setValue(fieldName, imageSrc, { shouldValidate: true, shouldDirty: true }); // Fallback
+      // Fallback to original image if compression fails
+      console.log("Falling back to original image");
+      setValue(fieldName, imageSrc, { shouldValidate: true, shouldDirty: true });
+      toast({
+        description: t('file_uploaded') || "Image captured (optimization skipped)",
+        variant: "default"
+      });
     }
   };
 
@@ -133,38 +149,28 @@ export default function Step2Id({ onNext, onBack, guestIndex }: Step2IdProps) {
       {/* UX: Tips for better scanning */}
       <Alert className="bg-blue-50 border-blue-200 text-blue-900 shadow-sm">
         <AlertCircle className="h-5 w-5 text-blue-600" />
-        <AlertTitle className="font-bold">Tips for a perfect document</AlertTitle>
+        <AlertTitle className="font-bold">{t('tips_title')}</AlertTitle>
         <AlertDescription className="text-blue-800">
-          Ensure good lighting and avoid glare when using the camera, or upload a clear photo of your ID. Make sure all edges are visible and text is readable.
+          {t('tips_description')}
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <FormField
           control={control}
           name={`guests.${guestIndex}.idFrontUrl`}
           render={() => (
             <FormItem>
               <FormControl>
-                <CameraCapture
-                  onCapture={(src) => handleCapture(src, `guests.${guestIndex}.idFrontUrl`)}
-                  label={t('upload_front') || "Capture Front Side"}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name={`guests.${guestIndex}.idBackUrl`}
-          render={() => (
-            <FormItem>
-              <FormControl>
-                <CameraCapture
-                  onCapture={(src) => handleCapture(src, `guests.${guestIndex}.idBackUrl`)}
-                  label={t('upload_back') || "Capture Back Side"}
-                />
+                <div className="space-y-2">
+                  <CameraCapture
+                    onCapture={(src) => handleCapture(src, `guests.${guestIndex}.idFrontUrl`)}
+                    label={t('upload_front')}
+                  />
+                  <p className="text-xs text-center text-muted-foreground">
+                    {t('file_requirements')}
+                  </p>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -201,7 +207,7 @@ export default function Step2Id({ onNext, onBack, guestIndex }: Step2IdProps) {
       <div className="flex justify-between pt-4">
         <Button variant="outline" onClick={onBack} disabled={isExtracting}>{t('correct')}</Button>
         <Button onClick={runOcr} disabled={isExtracting || !getValues(`guests.${guestIndex}.idFrontUrl`)}>
-          {t('extracting') === "Extracting data..." ? "Process Document" : t('extracting')}
+          {t('extracting')}
         </Button>
       </div>
     </div>

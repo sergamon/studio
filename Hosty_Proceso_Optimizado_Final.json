@@ -1,0 +1,163 @@
+{ "name": "Hosty - Proceso Optimizado Final", "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "48622859-1dfe-4299-b129-8ea8c74bc2ee",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [ -992, 96 ],
+      "id": "68d61d3a-3690-4af6-b18e-c01168c23b73",
+      "name": "Webhook (Recibe Datos App)",
+      "webhookId": "48622859-1dfe-4299-b129-8ea8c74bc2ee"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "=Reserva - {{ \$json.body.property }} - {{ new Date().toISOString().split(\"T\")[0] }}",
+        "driveId": { "__rl": true, "mode": "list", "value": "My Drive" },
+        "folderId": { "__rl": true, "value": "1XWvlU6uqLcRkg5Z3DEGwzv1UfRTChvcd", "mode": "list", "cachedResultName": "DOCUMENTOS HUESPEDES HOSTY", "cachedResultUrl": "https://drive.google.com/drive/folders/1XWvlU6uqLcRkg5Z3DEGwzv1UfRTChvcd" },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [ -768, 96 ],
+      "id": "771da7ae-d12f-4543-93ac-809d9d24b0c1",
+      "name": "Crear Carpeta Reserva",
+      "credentials": { "googleDriveOAuth2Api": { "id": "ctDxPAowP3WzS7N2", "name": "Google Drive n8n" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookItem = \$items(\"Webhook (Recibe Datos App)\")[0].json; const bookingFolderId = \$json.id; return [{ json: { ...webhookItem, bookingFolderId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ -528, 96 ],
+      "id": "af2e2cca-a475-4d4e-9111-8a8ac30e5698",
+      "name": "Inyectar bookingFolderId"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = []; for (const item of \$items()) { const body = item.json.body; if (body && Array.isArray(body.clients)) { for (const client of body.clients) { results.push({ json: { ...item.json, body: { ...body, client } } }); } } } return results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ -304, 96 ],
+      "id": "56dec2c0-85cc-436e-9657-42bd27679a19",
+      "name": "Split Huéspedes (Code)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = \$json.body || {}; const guest = body.client || {}; const bookingFolderId = \$json.bookingFolderId; if (!guest.idFrontUrl) throw new Error(\"Missing idFrontUrl\"); const mimeToExt = (m) => ({\"image/jpeg\":\"jpg\",\"image/png\":\"png\",\"image/webp\":\"webp\",\"application/pdf\":\"pdf\"}[m] || \"bin\"); const parseDataUrl = (s) => { const m = s.match(/^data:([^;]+);base64,(.*)\$/); return m ? { mime: m[1], data: m[2], ext: mimeToExt(m[1]) } : null; }; const doc = parseDataUrl(guest.idFrontUrl); if(!doc) throw new Error(\"Invalid ID Data URL\"); return { json: { ...guest, property: body.property, bookingFolderId }, binary: { id_front: { data: doc.data, mimeType: doc.mime, fileName: \"ID_Front.\" + doc.ext } } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ -80, 96 ],
+      "id": "9c2f9258-df53-46a5-95eb-21a33282c6e7",
+      "name": "Normalizar y Preparar Archivos"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ \$json.fullName || \$json.idNumber }}",
+        "driveId": { "__rl": true, "mode": "list", "value": "My Drive" },
+        "folderId": { "__rl": true, "value": "={{ \$json.bookingFolderId }}", "mode": "id" },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [ 160, 96 ],
+      "id": "0004f838-796d-4059-be66-b8bb3724d18f",
+      "name": "Crear Carpeta Huesped",
+      "credentials": { "googleDriveOAuth2Api": { "id": "ctDxPAowP3WzS7N2", "name": "Google Drive n8n" } }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const guestFolderId = \$json.id; const src = \$items(\"Normalizar y Preparar Archivos\")[\$itemIndex]; if (!src || !src.binary || !src.binary.id_front) throw new Error(\"Missing id_front binary\"); return { json: { ...src.json, guestFolderId }, binary: src.binary };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 400, 96 ],
+      "id": "3862128a-c492-45c4-a326-a37125089de6",
+      "name": "Adjuntar guestFolderId (preservar binary)"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "id_front",
+        "name": "={{ \$binary.id_front.fileName }}",
+        "driveId": { "__rl": true, "mode": "list", "value": "My Drive" },
+        "folderId": { "__rl": true, "value": "={{ \$json.guestFolderId }}", "mode": "id" },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [ 576, 96 ],
+      "id": "453b3380-c9d4-4df7-ab2c-fa083952d690",
+      "name": "Subir documento",
+      "credentials": { "googleDriveOAuth2Api": { "id": "ctDxPAowP3WzS7N2", "name": "Google Drive n8n" } }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": { "__rl": true, "value": "1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I", "mode": "list", "cachedResultName": "Registro Huespedes Automatizacion", "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I/edit?usp=drivesdk" },
+        "sheetName": { "__rl": true, "value": "gid=0", "mode": "list", "cachedResultName": "Hoja 1", "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I/edit#gid=0" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fullName": "={{ \$json.fullName }}", "documentType": "={{ \$json.documentType }}", "idNumber": "={{ \$json.idNumber }}", "birthDate": "={{ \$json.birthDate }}", "nationality": "={{ \$json.nationality }}", "email": "={{ \$json.email }}", "phone": "={{ \$json.phone }}", "property": "={{ \$json.property }}", "idFrontUrl": "={{ \$binary.id_front ? \"Archivo Adjunto\" : \"No\" }}", "Date": "={{ \$today }}"
+          },
+          "matchingColumns": [ "idNumber" ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [ 768, 96 ],
+      "id": "b39001d0-cf2a-4cf9-bb89-0a4016e7b30b",
+      "name": "Guardar en Sheets",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "j0rEqx0aTYlyyldF", "name": "Google Sheets account 2.0" } }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ \$(\"Adjuntar guestFolderId (preservar binary)\").item.json.email }}",
+        "subject": "Confirmacion de Check in - Hosty",
+        "message": "Hola {{ \$(\"Adjuntar guestFolderId (preservar binary)\").item.json.fullName }},\\n\\nRegistro exitoso para {{ \$(\"Adjuntar guestFolderId (preservar binary)\").item.json.property }}.",
+        "options": { "appendAttribution": false }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [ 992, 96 ],
+      "id": "ed662d61-ac7f-4b5a-8ee8-e3abcbd17fce",
+      "name": "Enviar Confirmacion",
+      "webhookId": "81c5a578-cb58-4ed5-92c8-9b1fddf3e1a8",
+      "credentials": { "gmailOAuth2": { "id": "wcT8deRJSw31JDa8", "name": "Gmail account" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"ok\": true, \"message\": \"Registro completado exitosamente.\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [ 1184, 96 ],
+      "id": "977410d1-3cfd-4ce2-9655-b4f85656bbbc",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook (Recibe Datos App)": { "main": [ [ { "node": "Crear Carpeta Reserva", "type": "main", "index": 0 } ] ] },
+    "Crear Carpeta Reserva": { "main": [ [ { "node": "Inyectar bookingFolderId", "type": "main", "index": 0 } ] ] },
+    "Inyectar bookingFolderId": { "main": [ [ { "node": "Split Huéspedes (Code)", "type": "main", "index": 0 } ] ] },
+    "Split Huéspedes (Code)": { "main": [ [ { "node": "Normalizar y Preparar Archivos", "type": "main", "index": 0 } ] ] },
+    "Normalizar y Preparar Archivos": { "main": [ [ { "node": "Crear Carpeta Huesped", "type": "main", "index": 0 } ] ] },
+    "Crear Carpeta Huesped": { "main": [ [ { "node": "Adjuntar guestFolderId (preservar binary)", "type": "main", "index": 0 } ] ] },
+    "Adjuntar guestFolderId (preservar binary)": { "main": [ [ { "node": "Subir documento", "type": "main", "index": 0 } ] ] },
+    "Subir documento": { "main": [ [ { "node": "Guardar en Sheets", "type": "main", "index": 0 } ] ] },
+    "Guardar en Sheets": { "main": [ [ { "node": "Enviar Confirmacion", "type": "main", "index": 0 } ] ] },
+    "Enviar Confirmacion": { "main": [ [ { "node": "Respond to Webhook", "type": "main", "index": 0 } ] ] }
+  }
+}

@@ -75,7 +75,14 @@ const extractDataFromIDFlow = ai.defineFlow(
     outputSchema: ExtractDataFromIDOutputSchema,
   },
   async (input: any) => {
-    const { output } = await prompt(input);
-    return output!;
+    console.log('Starting ID data extraction...');
+    try {
+      const { output } = await prompt(input);
+      console.log('Extraction successful:', JSON.stringify(output, null, 2));
+      return output!;
+    } catch (error) {
+      console.error('Extraction failed:', error);
+      throw error;
+    }
   }
 );

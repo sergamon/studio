@@ -60,7 +60,7 @@ export default function MainForm() {
       consentTra: false,
       consentMig: false,
       consentDp: false,
-      signature: '',
+      swornStatement: false,
     },
   });
 
@@ -85,7 +85,7 @@ export default function MainForm() {
         fieldsToValidate = Object.keys(defaultGuest).map(key => `guests.${currentGuestIndex}.${key as keyof GuestState}`);
         break;
       case 3: // Consent
-        fieldsToValidate = ['consentEntry', 'consentTra', 'consentMig', 'consentDp', 'signature'];
+        fieldsToValidate = ['consentEntry', 'consentTra', 'consentMig', 'consentDp', 'swornStatement'];
         break;
     }
 
@@ -124,21 +124,36 @@ export default function MainForm() {
     setIsSubmitting(true);
     const formValues = getValues();
 
-    const clients = formValues.guests.map(guest => ({
+    const preparedClients = formValues.guests.map(guest => ({
       ...guest,
+      // We inject property here as well just in case, but the main property is at root
+      property: formValues.property,
       phone: `+${guest.phoneCountryCode}${guest.phone.replace(`+${guest.phoneCountryCode}`, '')}`,
       email: formValues.email,
+      // n8n Normalizer expects 'idFrontUrl' to be the key for the image
+      idFrontUrl: guest.idFrontUrl,
+      idBackUrl: guest.idBackUrl || "",
+      documentUrl: guest.idFrontUrl, // Added for compatibility with older n8n nodes
+      signature: "", // Not used in this specific workflow but good for compatibility
       consentEntry: formValues.consentEntry,
       consentTra: formValues.consentTra,
       consentMig: formValues.consentMig,
       consentDp: formValues.consentDp,
-      signature: formValues.signature,
+      swornStatement: formValues.swornStatement,
     }));
 
+    // Constructing the exact payload the n8n "Split Huéspedes" node expects
+    // Node logic: const body = item.json.body; ... body.clients ...
     const finalData = {
-      property: formValues.property,
-      clients: clients
+      ...formValues,
+      clients: preparedClients,
+      guests: preparedClients // Maintain both naming conventions just in case
     };
+
+    console.log('Submitting payload to n8n:', finalData);
+    console.log('Payload keys:', Object.keys(finalData));
+    console.log('First client keys:', Object.keys(finalData.clients[0]));
+    console.log('Total clients:', finalData.clients.length);
 
     try {
       const response = await fetch('/api/submit', {
@@ -149,12 +164,22 @@ export default function MainForm() {
         body: JSON.stringify(finalData),
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred.' }));
-        throw new Error(`Submission failed: ${errorData.message}`);
+        const errorData = await response.json().catch(() => ({ message: 'Could not parse error response.' }));
+        console.error('Submission error details:', errorData);
+        console.error('Response status:', response.status);
+        throw new Error(errorData.message || `Submission failed with status ${response.status}`);
       }
 
-      console.log('Form Submitted:', finalData);
+      const responseJson = await response.json();
+      console.log('Form Submitted Successfully:', responseJson);
+
+      if (responseJson.warning) {
+        console.warn('Submission succeeded with warning:', responseJson.warning);
+      }
+
       setIsSubmitted(true);
     } catch (error: any) {
       console.error('Error submitting form:', error);

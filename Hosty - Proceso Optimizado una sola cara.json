@@ -1,0 +1,623 @@
+{
+  "name": "Hosty - Proceso Optimizado una sola cara",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "48622859-1dfe-4299-b129-8ea8c74bc2ee",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        96
+      ],
+      "id": "68d61d3a-3690-4af6-b18e-c01168c23b73",
+      "name": "Webhook (Recibe Datos App)",
+      "webhookId": "48622859-1dfe-4299-b129-8ea8c74bc2ee"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "=Reserva - {{ $json.body.property }} - {{ new Date().toISOString().split('T')[0] }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1XWvlU6uqLcRkg5Z3DEGwzv1UfRTChvcd",
+          "mode": "list",
+          "cachedResultName": "DOCUMENTOS HUESPEDES HOSTY",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1XWvlU6uqLcRkg5Z3DEGwzv1UfRTChvcd"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -768,
+        96
+      ],
+      "id": "771da7ae-d12f-4543-93ac-809d9d24b0c1",
+      "name": "Crear Carpeta Reserva",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ctDxPAowP3WzS7N2",
+          "name": "Google Drive n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Normalizar y Preparar Archivo (1 documento por huésped)\n\nconst body = $json.body ?? {};\nconst guest = body.client ?? null;\nconst bookingFolderId = $json.bookingFolderId ?? null;\n\nif (!guest) throw new Error('No se encontró body.client');\nif (!bookingFolderId) throw new Error('Falta bookingFolderId en el item');\nif (!body.property) throw new Error('Falta body.property');\n\nconst mimeToExt = (m) => ({\n  'image/jpeg': 'jpg',\n  'image/png': 'png',\n  'image/webp': 'webp',\n  'application/pdf': 'pdf',\n}[m] || 'bin');\n\nconst parseDataUrl = (s) => {\n  if (!s || typeof s !== 'string') return null;\n  const m = s.match(/^data:([^;]+);base64,(.*)$/s);\n  if (!m) return null;\n  return { mimeType: m[1], data: m[2], ext: mimeToExt(m[1]) };\n};\n\nconst safeName = (s) =>\n  String(s || 'Huesped_Sin_Nombre').replace(/[^a-zA-Z0-9]/g, '_');\n\nconst doc = parseDataUrl(guest.documentUrl);\nif (!doc) {\n  throw new Error(`Falta documentUrl (DataURL base64) para ${guest.fullName || guest.idNumber}`);\n}\n\nconst out = {\n  property: body.property,\n  bookingFolderId,\n  fullName: guest.fullName || '',\n  documentType: guest.documentType || 'ID',\n  idNumber: guest.idNumber || 'SN',\n  birthDate: guest.birthDate || '',\n  nationality: (guest.nationality || 'DESCONOCIDA').toUpperCase(),\n  email: (guest.email || '').toLowerCase(),\n  phone: guest.phone || '',\n  has_document: true,\n};\n\nconst bin = {\n  document: {\n    data: doc.data,\n    mimeType: doc.mimeType,\n    fileName: `DOCUMENTO_${safeName(out.fullName || out.idNumber)}.${doc.ext}`,\n  }\n};\n\nreturn { json: out, binary: bin };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        96
+      ],
+      "id": "9c2f9258-df53-46a5-95eb-21a33282c6e7",
+      "name": "Normalizar y Preparar Archivos"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I",
+          "mode": "list",
+          "cachedResultName": "Registro Huespedes Automatizacion",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fullName": "={{ $json.fullName }}",
+            "documentType": "={{ $json.idNumber }}",
+            "idNumber": "={{ $json.idNumber }}",
+            "birthDate": "={{ $json.birthDate }}",
+            "nationality": "={{ $json.nationality }}",
+            "email": "={{ $json.email }}",
+            "phone": "={{ $json.phone }}",
+            "property": "={{ $json.property }}",
+            "idFrontUrl": "={{ $binary.id_front ? 'Archivo Adjunto' : 'No' }}",
+            "nationalityMode": "={{ $json.nationality }}",
+            "Date": "={{ $today }}"
+          },
+          "matchingColumns": [
+            "idNumber"
+          ],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "property",
+              "displayName": "property",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fullName",
+              "displayName": "fullName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "documentType",
+              "displayName": "documentType",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "idNumber",
+              "displayName": "idNumber",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "birthDate",
+              "displayName": "birthDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nationalityMode",
+              "displayName": "nationalityMode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nationality",
+              "displayName": "nationality",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "countryOfOrigin",
+              "displayName": "countryOfOrigin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nextDestination",
+              "displayName": "nextDestination",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phoneCountryCode",
+              "displayName": "phoneCountryCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cityOfResidence",
+              "displayName": "cityOfResidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "flightNumber",
+              "displayName": "flightNumber",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "idFrontUrl",
+              "displayName": "idFrontUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "idBackUrl",
+              "displayName": "idBackUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "identification_number",
+              "displayName": "identification_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "kind",
+              "displayName": "kind",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "mimeType",
+              "displayName": "mimeType",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        768,
+        96
+      ],
+      "id": "b39001d0-cf2a-4cf9-bb89-0a4016e7b30b",
+      "name": "Guardar en Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "j0rEqx0aTYlyyldF",
+          "name": "Google Sheets account 2.0"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $json.fullName || $json.idNumber }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.bookingFolderId }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        160,
+        96
+      ],
+      "id": "0004f838-796d-4059-be66-b8bb3724d18f",
+      "name": "Crear Carpeta Huesped",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ctDxPAowP3WzS7N2",
+          "name": "Google Drive n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Adjuntar guestFolderId (preservar binary)').item.json.email }}",
+        "subject": "Confirmacion de Check in - Hosty",
+        "message": "=<!doctype html>\n<html lang=\"es\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <title>Registro exitoso</title>\n  </head>\n  <body style=\"margin:0;padding:0;background-color:#f6f8fb;font-family:Arial, Helvetica, sans-serif;color:#111827;\">\n    <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"background-color:#f6f8fb;padding:24px 0;\">\n      <tr>\n        <td align=\"center\">\n          <table role=\"presentation\" width=\"640\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:640px;max-width:640px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(17,24,39,0.08);\">\n            <!-- Header -->\n            <tr>\n              <td style=\"padding:22px 28px;background:#ffffff;border-bottom:1px solid #e5e7eb;\">\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">\n                  <tr>\n                    <td align=\"left\" style=\"vertical-align:middle;\">\n                      <img\n                        src=\"https://res.cloudinary.com/daauwbhzj/image/upload/v1768753359/Hosty_logo_ntehl5.jpg\"\n                        alt=\"Hosty\"\n                        width=\"80\"\n                        style=\"display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:80px;\"\n                      />\n                    </td>\n                    <td align=\"Right\" style=\"vertical-align:midle;font-size:14px;color:#6b7280;\">\n                      Confirmación de registro\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n\n            <!-- Body -->\n            <tr>\n              <td style=\"padding:28px;\">\n                <h1 style=\"margin:0 0 12px 0;font-size:20px;line-height:28px;color:#111827;\">\n                  Registro exitoso\n                </h1>\n                <p style=\"margin:0 0 14px 0;font-size:14px;line-height:22px;color:#374151;\">\n                  Hola, <strong style=\"color:#111827;\">tu registro fue completado exitosamente</strong>.\n                </p>\n                <p style=\"margin:0 0 18px 0;font-size:14px;line-height:22px;color:#374151;\">\n                  Gracias por compartir tu información. En Hosty trabajamos para que tu experiencia sea ágil, segura y\n                  sin inconvenientes.\n                </p>\n\n                <div style=\"margin:18px 0;padding:14px 16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;\">\n                  <p style=\"margin:0;font-size:13px;line-height:20px;color:#374151;\">\n                    Pronto recibiras las indicaciones para continuar con el proceso de check in.\n                  </p>\n                </div>\n\n                <p style=\"margin:18px 0 0 0;font-size:14px;line-height:22px;color:#374151;\">\n                  Cordialmente,<br />\n                  <strong style=\"color:#111827;\">Equipo Hosty</strong>\n                </p>\n              </td>\n            </tr>\n\n            <!-- Footer -->\n            <tr>\n              <td style=\"padding:18px 28px;background:#ffffff;border-top:1px solid #e5e7eb;\">\n                <p style=\"margin:0;font-size:12px;line-height:18px;color:#6b7280;\">\n                  Este es un mensaje automático de confirmación. Si no realizaste este registro, por favor contáctanos.\n                </p>\n              </td>\n            </tr>\n          </table>\n\n          <table role=\"presentation\" width=\"640\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:640px;max-width:640px;\">\n            <tr>\n              <td align=\"center\" style=\"padding:14px 0 0 0;font-size:12px;color:#9ca3af;\">\n                © Hosty. Todos los derechos reservados.\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n    </table>\n  </body>\n</html>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        992,
+        96
+      ],
+      "id": "ed662d61-ac7f-4b5a-8ee8-e3abcbd17fce",
+      "name": "Enviar Confirmacion",
+      "webhookId": "81c5a578-cb58-4ed5-92c8-9b1fddf3e1a8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wcT8deRJSw31JDa8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Adjuntar guestFolderId (preservar binary)\n\nconst guestFolderId = $json.id; // salida del nodo \"Crear Carpeta Huésped\"\nconst idx = $itemIndex;\nconst src = $items('Normalizar y Preparar Archivo')[idx];\n\nif (!src?.binary?.document) {\n  throw new Error('binary.document no existe. Verifica Normalizar y Preparar Archivo');\n}\n\nreturn {\n  json: {\n    ...src.json,\n    guestFolderId,\n  },\n  binary: src.binary,\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        96
+      ],
+      "id": "3862128a-c492-45c4-a326-a37125089de6",
+      "name": "Adjuntar guestFolderId (preservar binary)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split Huéspedes (Code)\n\nconst results = [];\n\nfor (const item of $items()) {\n  const body = item.json.body;\n  if (!body || !Array.isArray(body.clients) || body.clients.length === 0) {\n    throw new Error('body.clients debe ser un array con al menos un huésped');\n  }\n\n  for (const client of body.clients) {\n    results.push({\n      json: {\n        ...item.json,\n        body: {\n          ...body,\n          client,          // ← cliente actual en body.client\n        },\n      },\n    });\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        96
+      ],
+      "id": "56dec2c0-85cc-436e-9657-42bd27679a19",
+      "name": "Split Huéspedes (Code)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Inyectar bookingFolderId SIN perder body del Webhook\n\nconst webhookItem = $items('Webhook (Recibe Datos App)')[0].json; // ajusta el nombre exacto de tu nodo webhook\nconst bookingFolderId = $json.id; // id de la carpeta creada en Drive\n\nreturn [{\n  json: {\n    ...webhookItem,\n    bookingFolderId,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        96
+      ],
+      "id": "af2e2cca-a475-4d4e-9111-8a8ac30e5698",
+      "name": "Inyectar bookingFolderId"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "id_front",
+        "name": "={{ $binary.id_front.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.guestFolderId }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        576,
+        96
+      ],
+      "id": "453b3380-c9d4-4df7-ab2c-fa083952d690",
+      "name": "Subir documento",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ctDxPAowP3WzS7N2",
+          "name": "Google Drive n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"ok\": true, \"message\": \"Registro completado exitosamente.\" }\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1184,
+        96
+      ],
+      "id": "977410d1-3cfd-4ce2-9655-b4f85656bbbc",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook (Recibe Datos App)": {
+      "main": [
+        [
+          {
+            "node": "Crear Carpeta Reserva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Carpeta Reserva": {
+      "main": [
+        [
+          {
+            "node": "Inyectar bookingFolderId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar y Preparar Archivos": {
+      "main": [
+        [
+          {
+            "node": "Crear Carpeta Huesped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Carpeta Huesped": {
+      "main": [
+        [
+          {
+            "node": "Adjuntar guestFolderId (preservar binary)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adjuntar guestFolderId (preservar binary)": {
+      "main": [
+        [
+          {
+            "node": "Subir documento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Huéspedes (Code)": {
+      "main": [
+        [
+          {
+            "node": "Normalizar y Preparar Archivos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inyectar bookingFolderId": {
+      "main": [
+        [
+          {
+            "node": "Split Huéspedes (Code)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Sheets": {
+      "main": [
+        [
+          {
+            "node": "Enviar Confirmacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir documento": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Confirmacion": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "5790c5b1-a871-49c4-bd82-71f68d54a3b7",
+  "meta": {
+    "instanceId": "b13d7b9513abd41bc37c09903165a24193e0fee7979e875daa749cddead84d0e"
+  },
+  "id": "uqaaE9Ib3XgVxIx1",
+  "tags": []
+}

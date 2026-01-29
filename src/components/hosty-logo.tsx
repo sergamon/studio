@@ -1,18 +1,12 @@
-import * as React from 'react';
+import Image from 'next/image';
 
-const HostyLogo = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg width="100" height="32" viewBox="0 0 100 32" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <text
-      x="0"
-      y="24"
-      fontFamily="'Space Grotesk', sans-serif"
-      fontSize="28"
-      fontWeight="bold"
-      fill="hsl(var(--primary))"
-    >
-      Hosty
-    </text>
-  </svg>
+const HostyLogo = () => (
+  <Image
+    src="https://res.cloudinary.com/daauwbhzj/image/upload/v1768753359/Hosty_logo_ntehl5.jpg"
+    alt="Hosty Logo"
+    width={100}
+    height={32}
+  />
 );
 
 export default HostyLogo;

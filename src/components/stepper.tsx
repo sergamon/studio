@@ -15,7 +15,7 @@ const Stepper = ({ currentStep, steps, guestCount, currentGuestIndex }: StepperP
 
   const getStepTitle = (stepKey: TranslationKey, index: number): string => {
     const baseTitle = t(stepKey);
-    if (index > 0 && index < steps.length -1) {
+    if (index > 0 && index < steps.length - 1) {
       if (guestCount > 1) {
         return `${baseTitle} (${t('guest')} ${currentGuestIndex + 1})`;
       }
@@ -32,13 +32,13 @@ const Stepper = ({ currentStep, steps, guestCount, currentGuestIndex }: StepperP
               <div
                 className="group flex flex-col border-l-4 border-primary py-2 pl-4 md:border-l-0 md:border-t-4 md:pl-0 md:pt-4 md:pb-0"
               >
-                <span className="text-sm font-medium text-primary">{getStepTitle(stepKey, index)}</span>
+                <span className="text-sm font-headline font-semibold text-primary">{getStepTitle(stepKey, index)}</span>
               </div>
             ) : (
               <div
                 className="group flex flex-col border-l-4 border-gray-200 py-2 pl-4 hover:border-gray-300 md:border-l-0 md:border-t-4 md:pl-0 md:pt-4 md:pb-0"
               >
-                 <span className="text-sm font-medium text-gray-500">{getStepTitle(stepKey, index)}</span>
+                <span className="text-sm font-headline font-medium text-gray-500">{getStepTitle(stepKey, index)}</span>
               </div>
             )}
           </li>

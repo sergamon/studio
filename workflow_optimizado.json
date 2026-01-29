@@ -1,0 +1,404 @@
+{
+  "name": "Hosty - Proceso Optimizado (Sin OCR redundante)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "5ecc6461-1e6b-4f26-b9ca-3557fd5269e4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -896,
+        112
+      ],
+      "id": "51ae1c35-c339-4d1b-b051-fa9d618a3e35",
+      "name": "Webhook (Recibe Datos App)",
+      "webhookId": "5ecc6461-1e6b-4f26-b9ca-3557fd5269e4"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "=Reserva - {{ $json.body.guests[0].property || 'Sin Propiedad' }} - {{ new Date().toISOString().split('T')[0] }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1XWvlU6uqLcRkg5Z3DEGwzv1UfRTChvcd",
+          "mode": "list",
+          "cachedResultName": "DOCUMENTOS HUESPEDES HOSTY",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1XWvlU6uqLcRkg5Z3DEGwzv1UfRTChvcd"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -688,
+        112
+      ],
+      "id": "26b986c3-841c-4bd6-8dcd-caa2a939d421",
+      "name": "Crear Carpeta Reserva",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ctDxPAowP3WzS7N2",
+          "name": "Google Drive n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "body.clients[0]",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3,
+      "position": [
+        -464,
+        112
+      ],
+      "id": "0b7fedf4-22c1-4655-b73c-fc967224989a",
+      "name": "Separar Huespedes",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- PROCESAMIENTO OPTIMIZADO: SIN IA REDUNDANTE ---\n// La App ya enví­a los datos extraídos y validados por el usuario.\n\nconst guest = $input.item.json;\nconst bookingFolder = $('Crear Carpeta Reserva').item.json;\n\n// --- HELPERS ---\nconst mimeToExt = (m) => ({ 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp', 'application/pdf':'pdf' }[m] || 'bin');\nconst parseDataUrl = (s) => {\n  if (!s || typeof s !== 'string') return null;\n  const m = s.match(/^data:([^;]+);base64,(.*)$/s);\n  if (!m) return null;\n  return { mimeType: m[1], data: m[2], ext: mimeToExt(m[1]) };\n};\n\nconst toTitleCase = (str) => {\n  return String(str || '').toLowerCase().trim().split(' ')\n    .map(word => word.charAt(0).toUpperCase() + word.slice(1))\n    .join(' ');\n};\n\n// --- NORMALIZACIÓN DE DATOS ---\n// Usamos directamente lo que la App mandó (ya fue revisado por el usuario)\nconst output = {\n  fullName: toTitleCase(guest.fullName),\n  documentType: guest.documentType || 'ID',\n  idNumber: guest.idNumber || 'SN',\n  nationality: (guest.nationality || 'DESCONOCIDA').toUpperCase(),\n  birthDate: guest.birthDate || '',\n  email: (guest.email || '').toLowerCase(),\n  phone: guest.phone || '',\n  property: guest.property || '',\n  bookingFolderId: bookingFolder.id // ID de la carpeta creada previamente\n};\n\n// --- PREPARAR ARCHIVOS (BINARIOS) ---\nconst safeName = output.fullName.replace(/[^a-zA-Z0-9]/g, '_');\nconst binaryData = {};\n\n// Frente\nconst imgFront = parseDataUrl(guest.idFrontUrl);\nif (imgFront) {\n  binaryData.id_front = {\n    data: imgFront.data,\n    mimeType: imgFront.mimeType,\n    fileName: `ID_FRENTE_${safeName}.${imgFront.ext}`\n  };\n}\n\n// Reverso\nconst imgBack = parseDataUrl(guest.idBackUrl);\nif (imgBack) {\n  binaryData.id_back = {\n    data: imgBack.data,\n    mimeType: imgBack.mimeType,\n    fileName: `ID_REVERSO_${safeName}.${imgBack.ext}`\n  };\n}\n\n// Firma\nconst imgSign = parseDataUrl(guest.signature);\nif (imgSign) {\n  binaryData.signature = {\n    data: imgSign.data,\n    mimeType: imgSign.mimeType,\n    fileName: `FIRMA_${safeName}.${imgSign.ext}`\n  };\n}\n\n// Banderas de control\noutput.has_id_front = !!binaryData.id_front;\noutput.has_id_back = !!binaryData.id_back;\noutput.has_signature = !!binaryData.signature;\n\nreturn [{\n  json: output,\n  binary: binaryData\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        112
+      ],
+      "id": "f8937241-fcb6-4475-a403-33a918bc0af9",
+      "name": "Normalizar y Preparar Archivos"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I",
+          "mode": "list",
+          "cachedResultName": "Registro Huespedes Automatizacion",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fullName": "={{ $json.fullName }}",
+            "documentType": "={{ $json.documentType }}",
+            "idNumber": "={{ $json.idNumber }}",
+            "birthDate": "={{ $json.birthDate }}",
+            "nationality": "={{ $json.nationality }}",
+            "email": "={{ $json.email }}",
+            "phone": "={{ $json.phone }}",
+            "property": "={{ $json.property }}",
+            "idFrontUrl": "={{ $binary.id_front ? 'Archivo Adjunto' : 'No' }}",
+            "link_carpeta": "=https://drive.google.com/drive/folders/{{ $json.bookingFolderId }}"
+          },
+          "matchingColumns": [
+            "idNumber"
+          ],
+          "schema": [
+            {
+              "id": "fullName",
+              "displayName": "fullName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "idNumber",
+              "displayName": "idNumber",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5228e7a0-80af-450a-9039-c17d78162d44",
+      "name": "Guardar en Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "j0rEqx0aTYlyyldF",
+          "name": "Google Sheets account 2.0"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $json.fullName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.bookingFolderId }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        0,
+        256
+      ],
+      "id": "82842d03-40aa-44e3-8e2f-8c9cab95f9c3",
+      "name": "Crear Carpeta Huesped",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ctDxPAowP3WzS7N2",
+          "name": "Google Drive n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "id_front",
+        "name": "={{ $binary.id_front.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        256,
+        256
+      ],
+      "id": "ed23674c-9e85-448b-a878-9825c04d5fda",
+      "name": "Subir Frente",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ctDxPAowP3WzS7N2",
+          "name": "Google Drive n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.has_id_back }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        464,
+        256
+      ],
+      "id": "1eca960a-3abe-4f1c-a2c5-c0344dc4f17f",
+      "name": "? Tiene Reverso"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "id_back",
+        "name": "={{ $binary.id_back.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "value": "={{ $('Crear Carpeta Huesped').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        656,
+        208
+      ],
+      "id": "09c4b093-7455-45c8-8818-2b710128c946",
+      "name": "Subir Reverso",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ctDxPAowP3WzS7N2",
+          "name": "Google Drive n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Confirmacion de Check in - Hosty",
+        "message": "Hola {{ $json.fullName }},\n\nTus datos han sido registrados con exito para la propiedad {{ $json.property }}.\n\nGracias por usar Hosty.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        912,
+        112
+      ],
+      "id": "7efde5ed-a0ed-4e42-a5b1-ebdd6354c021",
+      "name": "Enviar Confirmacion",
+      "webhookId": "0b089314-12f6-4dc1-9962-5059afea27a5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wcT8deRJSw31JDa8",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook (Recibe Datos App)": {
+      "main": [
+        [
+          {
+            "node": "Crear Carpeta Reserva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Carpeta Reserva": {
+      "main": [
+        [
+          {
+            "node": "Separar Huespedes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar Huespedes": {
+      "main": [
+        [
+          {
+            "node": "Normalizar y Preparar Archivos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar y Preparar Archivos": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Crear Carpeta Huesped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Carpeta Huesped": {
+      "main": [
+        [
+          {
+            "node": "Subir Frente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir Frente": {
+      "main": [
+        [
+          {
+            "node": "? Tiene Reverso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "? Tiene Reverso": {
+      "main": [
+        [
+          {
+            "node": "Subir Reverso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar Confirmacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subir Reverso": {
+      "main": [
+        [
+          {
+            "node": "Enviar Confirmacion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "ffea3dc7-f4a8-4c66-83a7-706fb3076f93",
+  "meta": {
+    "instanceId": "b13d7b9513abd41bc37c09903165a24193e0fee7979e875daa749cddead84d0e"
+  },
+  "id": "ZHKTS5F6BXbmWxgS9wUXi",
+  "tags": []
+}

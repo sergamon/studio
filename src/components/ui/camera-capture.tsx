@@ -76,6 +76,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            // Check file size (10MB limit)
+            const MAX_SIZE = 10 * 1024 * 1024;
+            if (file.size > MAX_SIZE) {
+                setError("El archivo es demasiado grande. El peso máximo es 10MB.");
+                return;
+            }
+
             const reader = new FileReader();
             reader.onloadend = () => {
                 const result = reader.result as string;
@@ -87,11 +94,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, label, 
     };
 
     const triggerFileUpload = () => {
+        setError(null);
         fileInputRef.current?.click();
     };
 
     const retake = () => {
         setCapturedImage(null);
+        setError(null);
         startCamera();
     };
 

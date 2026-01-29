@@ -13,7 +13,7 @@ const Header = () => {
         <div className="flex h-20 items-center justify-between">
           <div className="flex items-center gap-4">
             <HostyLogo />
-            <h1 className="hidden sm:block font-headline text-xl md:text-2xl font-semibold text-foreground tracking-tight">
+            <h1 className="font-headline text-lg sm:text-xl md:text-2xl font-semibold text-foreground tracking-tight leading-tight">
               {t('title')}
             </h1>
           </div>

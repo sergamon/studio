@@ -79,10 +79,7 @@ const Step5Review = ({ onBack, onSubmit, addGuest, editGuest }: Step5ReviewProps
             <p className="text-sm text-foreground">{formData.consentTra ? '✅' : '❌'} {t('consent_tra')}</p>
             <p className="text-sm text-foreground">{formData.consentMig ? '✅' : '❌'} {t('consent_mig')}</p>
             <p className="text-sm text-foreground">{formData.consentDp ? '✅' : '❌'} {t('consent_dp')}</p>
-            <div className="pt-4">
-                <p className="text-sm font-medium text-muted-foreground">{t('signature')}</p>
-                {formData.signature ? <img src={formData.signature} alt="User signature" className="mt-2 bg-white border rounded-md max-w-xs" /> : <p className="text-sm text-destructive">{t('errors_signature')}</p>}
-            </div>
+            <p className="text-sm text-foreground">{formData.swornStatement ? '✅' : '❌'} {t('signature')}</p>
         </CardContent>
       </Card>
 

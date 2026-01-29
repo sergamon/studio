@@ -1,0 +1,175 @@
+{
+  "name": "Hosty - Proceso Optimizado Corrected",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "48622859-1dfe-4299-b129-8ea8c74bc2ee",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -992,
+        96
+      ],
+      "id": "68d61d3a-3690-4af6-b18e-c01168c23b73",
+      "name": "Webhook (Recibe Datos App)",
+      "webhookId": "48622859-1dfe-4299-b129-8ea8c74bc2ee"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "=Reserva - {{ $json.body.property }} - {{ new Date().toISOString().split('T')[0] }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1XWvlU6uqLcRkg5Z3DEGwzv1UfRTChvcd",
+          "mode": "list",
+          "cachedResultName": "DOCUMENTOS HUESPEDES HOSTY",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1XWvlU6uqLcRkg5Z3DEGwzv1UfRTChvcd"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -768,
+        96
+      ],
+      "id": "771da7ae-d12f-4543-93ac-809d9d24b0c1",
+      "name": "Crear Carpeta Reserva",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ctDxPAowP3WzS7N2",
+          "name": "Google Drive n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Normalizar y Preparar Archivo (1 documento por huésped)\n\nconst body = $json.body ?? null;
+const guest = body.client ?? null;
+const bookingFolderId = $json.bookingFolderId ?? null;
+
+if (!guest) throw new Error('No se encontró body.client');
+if (!bookingFolderId) throw new Error('Falta bookingFolderId en el item');
+if (!body.property) throw new Error('Falta body.property');
+
+const mimeToExt = (m) => ({
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'application/pdf': 'pdf',
+}[m] || 'bin');
+
+const parseDataUrl = (s) => {
+  if (!s || typeof s !== 'string') return null;
+  const m = s.match(/^data:([^;]+);base64,(.*)$/s);
+  if (!m) return null;
+  return { mimeType: m[1], data: m[2], ext: mimeToExt(m[1]) };
+};
+
+const safeName = (s) =>
+  String(s || 'Huesped_Sin_Nombre').replace(/[^a-zA-Z0-9]/g, '_');
+
+// FIXED: Use idFrontUrl instead of documentUrl
+const doc = parseDataUrl(guest.idFrontUrl);
+if (!doc) {
+  throw new Error(`Falta idFrontUrl (DataURL base64) para ${guest.fullName || guest.idNumber}`);
+}
+
+const out = {
+  property: body.property,
+  bookingFolderId,
+  fullName: guest.fullName || '',
+  documentType: guest.documentType || 'ID',
+  idNumber: guest.idNumber || 'SN',
+  birthDate: guest.birthDate || '',
+  nationality: (guest.nationality || 'DESCONOCIDA').toUpperCase(),
+  email: (guest.email || '').toLowerCase(),
+  phone: guest.phone || '',
+  has_document: true,
+};
+
+// FIXED: Use id_front as binary key to match subsequent nodes
+const bin = {
+  id_front: {
+    data: doc.data,
+    mimeType: doc.mimeType,
+    fileName: `ID_FRENTE_${safeName(out.fullName || out.idNumber)}.${doc.ext}`,
+  }
+};
+
+return { json: out, binary: bin };
+"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        96
+      ],
+      "id": "9c2f9258-df53-46a5-95eb-21a33282c6e7",
+      "name": "Normalizar y Preparar Archivos"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I",
+          "mode": "list",
+          "cachedResultName": "Registro Huespedes Automatizacion",
+          "cachedResultUrl": "https://docs.google.com/drive/folders/1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yPgVA_9jeBYf_pDt-HrYYRNBrzbDXam9G7wE-Sl28_I/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fullName": "={{ $json.fullName }}",
+            "documentType": "={{ $json.idNumber }}",
+            "idNumber": "={{ $json.idNumber }}",
+            "birthDate": "={{ $json.birthDate }}",
+            "nationality": "={{ $json.nationality }}",
+            "email": "={{ $json.email }}",
+            "phone": "={{ $json.phone }}",
+            "property": "={{ $json.property }}",
+            "idFrontUrl": "={{ $binary.id_front ? 'Archivo Adjunto' : 'No' }}",
+            "nationalityMode": "={{ $json.nationality }}",
+            "Date": "={{ $today }}"
+          },
+          "matchingColumns": [
+            "idNumber"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        224
+      ],
+      "id": "11111111-1111-1111-1111-111111111111",
+      "name": "Actualizar Registro Huespedes",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ctDxPAowP3WzS7N2",
+          "name": "Google Sheets n8n"
+        }
+      }
+    }
+  ]
+}
