@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useLanguage } from '@/hooks/use-language';
-import { extractDataFromID } from '@/ai/flows/extract-data-from-id';
 import { Button } from '@/components/ui/button';
 import { CameraCapture } from '@/components/ui/camera-capture';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -84,7 +83,6 @@ export default function Step2Id({ onNext, onBack, guestIndex }: Step2IdProps) {
 
   const runOcr = async () => {
     const frontImageUri = getValues(`guests.${guestIndex}.idFrontUrl`);
-    const backImageUri = getValues(`guests.${guestIndex}.idBackUrl`);
 
     if (!frontImageUri) {
       toast({
@@ -96,33 +94,17 @@ export default function Step2Id({ onNext, onBack, guestIndex }: Step2IdProps) {
     }
 
     setIsExtracting(true);
-    setExtractionStep('uploading'); // Initial state
-
-    // Simulate different processing stages for UX
-    const stepsTimeout = setTimeout(() => setExtractionStep('analyzing'), 2000);
+    setExtractionStep('analyzing');
 
     try {
-      // images are already compressed during capture
-      const result = await extractDataFromID({
-        frontPhotoDataUri: frontImageUri,
-        backPhotoDataUri: backImageUri || undefined,
-      });
-
-      // Haptic feedback for success
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate([50, 50, 50]);
       }
 
-      if (result.full_name) setValue(`guests.${guestIndex}.fullName`, result.full_name, { shouldDirty: true });
-      if (result.document_type) setValue(`guests.${guestIndex}.documentType`, result.document_type, { shouldDirty: true });
-      if (result.identification_number) setValue(`guests.${guestIndex}.idNumber`, result.identification_number, { shouldDirty: true });
-      if (result.birthdate_ddmmyyyy) setValue(`guests.${guestIndex}.birthDate`, result.birthdate_ddmmyyyy, { shouldDirty: true });
-      if (result.nationality_label) {
-        setValue(`guests.${guestIndex}.nationalityMode`, 'Otra', { shouldDirty: true });
-        setValue(`guests.${guestIndex}.nationality`, result.nationality_label.toUpperCase(), { shouldDirty: true });
-      }
-
-      toast({ title: "Success", description: "Document processed successfully." });
+      toast({
+        title: "Info",
+        description: "Automatic extraction now happens after upload. Continue to review or submit.",
+      });
       onNext();
     } catch (error: any) {
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
@@ -133,10 +115,9 @@ export default function Step2Id({ onNext, onBack, guestIndex }: Step2IdProps) {
       toast({
         variant: 'destructive',
         title: 'Extraction Failed',
-        description: error.message || 'Could not extract data. Please try again or enter manually.',
+        description: error.message || 'Could not proceed. Please try again or enter manually.',
       });
     } finally {
-      clearTimeout(stepsTimeout);
       setIsExtracting(false);
       setExtractionStep('');
     }

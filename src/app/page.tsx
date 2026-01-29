@@ -1,10 +1,10 @@
-import MainForm from '@/components/main-form';
+import FormClient from '@/components/FormClient';
 import MainLayout from '@/components/layout/main-layout';
 
 export default function Home() {
   return (
     <MainLayout>
-      <MainForm />
+      <FormClient />
     </MainLayout>
   );
 }
